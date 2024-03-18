@@ -17,9 +17,14 @@ fun main() {
 }
 
 fun callParameterlessMethod(owner: KClass<*>, func: KCallable<*>) {
-//    if() {
-//        println(" >>>> $res")
-//    }
+    val parameters = func.parameters
+    if (parameters.size == 1
+        && parameters.contains(func.instanceParameter)
+        && func.returnType.classifier != Unit::class
+        ) {
+        val res = func.call(owner.createInstance())
+        println(" >>>> $res")
+    }
 }
 
 fun listClassesInClasspath(): List<KClass<*>> {
