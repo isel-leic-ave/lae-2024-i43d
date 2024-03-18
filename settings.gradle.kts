@@ -7,3 +7,4 @@ rootProject.name = "lae-2024-i43d"
 include("lesson09-reflect")
 include("lesson09-TPC")
 include("lesson10-logger")
+include("lesson11-naive-mapper")
