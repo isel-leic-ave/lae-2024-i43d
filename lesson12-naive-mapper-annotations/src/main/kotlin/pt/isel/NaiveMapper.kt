@@ -2,6 +2,7 @@ package pt.isel
 
 import kotlin.reflect.*
 import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 
 /**
@@ -104,7 +105,16 @@ fun matchParameter(
     srcProp: KProperty<*>,
     ctorParameters: List<KParameter>) : KParameter?{
     return ctorParameters.firstOrNull { arg ->
-        srcProp.name == arg.name
-        && srcProp.returnType == arg.type
+        srcProp.returnType == arg.type
+        && hasSameName(srcProp, arg)
     }
+}
+
+fun hasSameName(srcProp: KProperty<*>, arg: KParameter): Boolean {
+    if(srcProp.name == arg.name)
+        return true
+    val annot = srcProp
+        .findAnnotation<MapProp>()
+        ?: return false
+    return annot.destName == arg.name
 }
