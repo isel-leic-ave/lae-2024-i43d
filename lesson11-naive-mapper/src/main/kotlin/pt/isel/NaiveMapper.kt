@@ -22,10 +22,12 @@ fun <T : Any> Any.mapTo(dest: KClass<T>) : T {
     // val tt: Map<KParameter, Any>
     val ctorArgs: Map<KParameter, Any?> = this::class
         .memberProperties
-        .filter { fromProp -> matchParameter(fromProp, destParameters) != null }
-        .associate { fromProp ->
-            val destArg = matchParameter(fromProp, destParameters)!!
+        .map { fromProp -> fromProp to matchParameter(fromProp, destParameters) }
+        .filter { it.second != null  }
+        .associate {
+            val fromProp = it.first
             val fromVal = fromProp.call(this)
+            val destArg = it.second!! // Checked on filter
             destArg to fromVal
         }
     /**
@@ -59,19 +61,20 @@ fun <T : Any> Any.mapToProps(dest: KClass<T>) : T {
     this::class
         .memberProperties
         .forEach { srcProp ->
-            val destProp = matchParameter(srcProp, destProps)
+            val destProp = matchProperty(srcProp, destProps)
             val fromVal = srcProp.call(this)
             destProp?.setter?.call(target, fromVal)
         }
     return target
 }
 
-fun matchParameter(srcProp: KProperty<*>, props: List<KMutableProperty<*>>) : KMutableProperty<*>?{
+fun matchProperty(srcProp: KProperty<*>, props: List<KMutableProperty<*>>) : KMutableProperty<*>?{
     return props.firstOrNull { destProp ->
         srcProp.name == destProp.name
         && srcProp.returnType == destProp.returnType
     }
 }
+
 fun matchParameter(
     srcProp: KProperty<*>,
     ctorParameters: List<KParameter>) : KParameter?{
