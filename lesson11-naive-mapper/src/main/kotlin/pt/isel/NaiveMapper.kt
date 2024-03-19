@@ -19,7 +19,6 @@ fun <T : Any> Any.mapTo(dest: KClass<T>) : T {
     /**
      * 2nd Corresponding properties in this to destParameters
      */
-    // val tt: Map<KParameter, Any>
     val ctorArgs: Map<KParameter, Any?> = this::class
         .memberProperties
         .map { fromProp -> fromProp to matchParameter(fromProp, destParameters) }
