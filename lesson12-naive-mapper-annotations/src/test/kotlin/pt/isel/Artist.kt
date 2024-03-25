@@ -5,8 +5,8 @@ package pt.isel
  */
 class Artist(
     val id: Int = 0,
-    val name: String = "",
-    val from: String = ""
+    val name: String,
+    val from: String
 )
 /**
  * 1st version with mutable properties
