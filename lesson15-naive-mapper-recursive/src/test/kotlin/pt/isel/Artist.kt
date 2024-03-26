@@ -6,7 +6,8 @@ package pt.isel
 class Artist(
     val id: Int = 0,
     val name: String,
-    val from: String
+    val from: State = State("", ""),
+    val tracks: List<Track> = emptyList()
 )
 /**
  * 1st version with mutable properties
