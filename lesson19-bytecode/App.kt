@@ -15,8 +15,18 @@ fun calculateNetBalance(
     return balance - balance * tax + balance * interest + income - expense
 }
 
-class Person()
+class Person(val name: String) {
+    fun print(label: String) {
+        // this is local variable 0
+        val myName = this.name
+        // Label is local variable 1
+        println(label + ": " + myName)
+    }
+}
+
+class Student()
 
 fun main() {
-    println(Person())
+    val st = Student()
+    println(st)
 }
