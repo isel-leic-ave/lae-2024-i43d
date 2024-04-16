@@ -21,17 +21,16 @@ fun main() {
     val cm: ClassMaker = dynamicClass()
     // cm.finishTo(FileOutputStream(cm.name() + ".class"))
     val klass: Class<*> = cm.finish()
-    val receiver = klass
+    val receiver: MulInterface = klass
         .kotlin
         .constructors
         .first()
-        .call(9)
+        .call(9) as MulInterface
 
-    val res = klass
-        .kotlin
-        .memberFunctions
-        .first { it.name == "mul" }
-        .call(receiver, 3)
+    /*
+     * Replace Call via Reflection with Call to Interface
+     */
+    val res = receiver.mul(3)
     println(res)
 }
 
@@ -70,7 +69,10 @@ fun introCojenMaker(): ClassMaker {
     }
  */
 fun dynamicClass(): ClassMaker {
-    val cm = ClassMaker.begin("Dummy").public_()
+    val cm = ClassMaker
+        .begin("Dummy")
+        .public_()
+        .implement(MulInterface::class.java)
     val fieldNr = cm
         .addField(Int::class.java, "nr")
         .private_()

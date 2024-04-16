@@ -11,9 +11,20 @@ repositories {
     mavenCentral()
 }
 
+tasks.compileKotlin {
+    kotlinOptions {
+        javaParameters = true
+    }
+}
+tasks.compileTestKotlin {
+    kotlinOptions {
+        javaParameters = true
+    }
+}
+
 dependencies {
     implementation(kotlin("reflect"))
-
+    implementation("org.cojen:cojen-maker:2.5.5")
     // Use the Kotlin JUnit 5 integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 }

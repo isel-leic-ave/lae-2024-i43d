@@ -8,7 +8,7 @@ import kotlin.reflect.full.memberProperties
  * 3r version - Optimized to make the minimum use of Reflect in function mapFrom()
  * and maximize Reflection in constructor.
  */
-class NaiveMapper<T : Any> private constructor (val srcKlass: KClass<*>, val destKlass: KClass<T>) {
+class NaiveMapper<T : Any> private constructor (val srcKlass: KClass<*>, val destKlass: KClass<T>) : Mapper<T> {
     companion object {
         private val mappers: MutableMap<Pair<KClass<*>, KClass<*>>, NaiveMapper<*>> = mutableMapOf()
 
@@ -30,7 +30,7 @@ class NaiveMapper<T : Any> private constructor (val srcKlass: KClass<*>, val des
         }
         .filter { it.second != null  }
 
-    fun mapFrom(source: Any): T {
+    override fun mapFrom(source: Any): T {
         val ctorArgs = propsToCtorParameters
             .associate { pair ->                   // Map<KParameter, Any?>
                 val fromVal = pair.first.call(source)
