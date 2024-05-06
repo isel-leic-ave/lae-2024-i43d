@@ -11,6 +11,7 @@ data class Weather (
     val humidity: Int,
     val cloudcover: Int,
 )
+
  fun String.fromCsvToWeather(): Weather {
      val words = this.split(",")
      return Weather(
