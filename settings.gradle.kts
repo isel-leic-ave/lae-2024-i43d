@@ -14,4 +14,4 @@ include("lesson18-exercises")
 include("lesson20-cojen-maker")
 include("lesson21-naive-mapper-dynamic")
 include("lesson24-benchmarking")
-
+include("lesson27-sequences")
