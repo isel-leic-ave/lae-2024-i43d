@@ -85,10 +85,68 @@ fun <T : Any> Sequence<T>.yieldFilter(predicate: (T) -> Boolean) = sequence {
 /**
  * TPC
  */
-public fun <T> Sequence<T>.lazyDistinct(): Sequence<T> {
+enum class DistinctIteratorState {NotReady, Ready, Finish}
+
+fun <T> Sequence<T>.lazyDistinct(): Sequence<T> {
+    return object : Sequence<T> {
+        override fun iterator(): Iterator<T> {
+            return object : Iterator<T> {
+                var state = DistinctIteratorState.NotReady
+                val iter = this@lazyDistinct.iterator()
+                val l = mutableSetOf<T>()
+
+                private fun tryAdvance() {
+                    if (state == DistinctIteratorState.NotReady) {
+                        while (iter.hasNext()) {
+                            val item = iter.next()
+                            if (l.add(item)) {
+                                state = DistinctIteratorState.Ready
+                                return
+                            }
+                        }
+                        state = DistinctIteratorState.Finish
+                    }
+                }
+                override fun hasNext(): Boolean {
+                    tryAdvance()
+                    return state == DistinctIteratorState.Ready
+                }
+
+                override fun next(): T {
+                    if (!hasNext()) throw NoSuchElementException()
+                    state = DistinctIteratorState.NotReady
+                    return l.last()
+                }
+            }
+        }
+    }
+}
+
+fun <T> Sequence<T>.yieldDistinct() = sequence {
+    val consumedElement = mutableSetOf<T>()
+    for (item in this@yieldDistinct)
+        if (consumedElement.add(item)) {
+            yield(item)
+        }
+}
+
+fun <T> Sequence<T>.concat(other: Sequence<T>) : Sequence<T> {
     TODO()
 }
 
-public fun <T> Sequence<T>.yieldDistinct(): Sequence<T> {
+fun <T> Sequence<T>.yieldConcat(other: Sequence<T>) : Sequence<T> {
+    TODO()
+}
+
+/**
+ * Merges series of adjacent elements
+ */
+fun <T> Sequence<T>.collapse() : Sequence<T> {
+    TODO()
+}
+/**
+ * Merges series of adjacent elements
+ */
+fun <T> Sequence<T>.yieldCollapse() : Sequence<T> {
     TODO()
 }
