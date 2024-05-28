@@ -17,89 +17,89 @@ class CloseHandles {
 
     @Test
     fun `check overlapping locks`() {
-        val writeAndFlush = { nr:Int ->
+        fun writeAndFlush(nr:Int) {
             FileOutputStream(output)
                 .also { it.channel.lock() }
                 .bufferedWriter()
                 .run {
-                    write("Meu $nr")
+                    write("My $nr")
                     write("Super $nr")
                     flush()
                 }
         }
         writeAndFlush(1)
-        // Eventually Finalization runs and close the File Handle and releases the lock!!
-        // Do not do this in production code.
+        // Eventually Finalization runs, closes the File Handle and releases the lock!!
+        // Do not do this in real code.
         System.gc()
         writeAndFlush(2)
     }
 
     @Test
     fun `check overlapping locks with close`() {
-        val writeAndFlush = { nr:Int ->
+        fun writeAndFlush(nr:Int) {
             FileOutputStream(output)
                 .also { it.channel.lock() }
                 .bufferedWriter()
                 .run {
-                    write("Meu $nr")
+                    write("My $nr")
                     write("Super $nr")
-                    close()
+                    close() // flush() + close() BR => close() OSW => close() StreamEncoder
                 }
         }
         writeAndFlush(1)
         File(output).readText().also {
-            assertEquals("Meu 1Super 1", it)
+            assertEquals("My 1Super 1", it)
         }
         writeAndFlush(2)
         File(output).readText().also {
-            assertEquals("Meu 2Super 2", it)
+            assertEquals("My 2Super 2", it)
         }
     }
 
     @Test
     fun `check overlapping locks in try with resources`() {
-        val writeAndFlush = { nr:Int ->
+        fun writeAndFlush(nr:Int) {
             FileOutputStream(output)
                 .also { it.channel.lock() }
                 .bufferedWriter()
                 .use {
-                    it.write("Meu $nr")
+                    it.write("My $nr")
                     it.write("Super $nr")
                 }
         }
         writeAndFlush(1)
         File(output).readText().also {
-            assertEquals("Meu 1Super 1", it)
+            assertEquals("My 1Super 1", it)
         }
         writeAndFlush(2)
         File(output).readText().also {
-            assertEquals("Meu 2Super 2", it)
+            assertEquals("My 2Super 2", it)
         }
     }
 
     @Test
     fun `check exclusive writer in use block`() {
-        val writeAndFlush = { nr:Int ->
+        fun writeAndFlush(nr:Int) {
             ExclusiveWriter(output).use {
-                it.writer.write("Meu $nr")
+                it.writer.write("My $nr")
                 it.writer.write("Super $nr")
             }
         }
         writeAndFlush(1)
         File(output).readText().also {
-            assertEquals("Meu 1Super 1", it)
+            assertEquals("My 1Super 1", it)
         }
         writeAndFlush(2)
         File(output).readText().also {
-            assertEquals("Meu 2Super 2", it)
+            assertEquals("My 2Super 2", it)
         }
-        System.gc()
+        System.gc() // Run close for 2nd time
     }
     @Test
     fun `check exclusive writer WITHOUT use block`() {
-        val writeAndFlush = { nr:Int ->
+        fun writeAndFlush(nr:Int) {
             ExclusiveWriter(output).also {
-                it.writer.write("Meu $nr")
+                it.writer.write("My $nr")
                 it.writer.write("Super $nr")
             }
         }
@@ -107,31 +107,33 @@ class CloseHandles {
         System.gc()
         Thread.sleep(100)
         File(output).readText().also {
-            assertEquals("Meu 1Super 1", it)
+            assertEquals("My 1Super 1", it)
         }
         writeAndFlush(2)
         System.gc()
         Thread.sleep(100)
         File(output).readText().also {
-            assertEquals("Meu 2Super 2", it)
+            assertEquals("My 2Super 2", it)
         }
     }
 }
 
 /**
- * Like a BufferedWriter but with a lock
+ * Like a BufferedWriter with a lock on channel
  */
 class ExclusiveWriter(path: String) : Closeable {
     val writer = FileOutputStream(path)
         .also { it.channel.lock() }
         .bufferedWriter()
-
+    var closeCount = 0
     override fun close() {
-        // Nevertheless is does not avoid the Finalization process !!!
+        // Nevertheless it does not avoid the Finalization process !!!
         writer.close()
+        closeCount++
+        println("Run close on ${hashCode()} for $closeCount")
     }
     protected fun finalize() {
         // !!!! May call close for the 2nd time !!!
-        writer.close()
+        this.close()
     }
 }
