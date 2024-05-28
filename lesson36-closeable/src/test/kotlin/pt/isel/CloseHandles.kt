@@ -43,7 +43,7 @@ class CloseHandles {
                 .run {
                     write("My $nr")
                     write("Super $nr")
-                    close() // flush() + close() BR => close() OSW => close() StreamEncoder
+                    close() // flush() + close() BR => close() OSW => close() StreamEncoder => Release Lock
                 }
         }
         writeAndFlush(1)
