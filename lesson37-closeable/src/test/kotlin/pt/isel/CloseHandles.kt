@@ -31,13 +31,21 @@ class CloseHandles {
                 }
         }
         writeAndFlush(1)
-        File(output).readText().also {
-            assertEquals("My 1Super 1", it)
-        }
         // Eventually Finalization runs, closes the File Handle and releases the lock!!
         // Do not do this in real code.
         System.gc()
+
+        File(output).readText().also {
+            assertEquals("My 1Super 1", it)
+        }
         writeAndFlush(2)
+        // Eventually Finalization runs, closes the File Handle and releases the lock!!
+        // Do not do this in real code.
+        System.gc()
+        File(output).readText().also {
+            assertEquals("My 2Super 2", it)
+        }
+
     }
 
     @Test
@@ -90,6 +98,7 @@ class CloseHandles {
             ExclusiveWriter(output).use {
                 it.writer.write("My $nr")
                 it.writer.write("Super $nr")
+                it.writer.flush()
                 // There is an implicit call to close()
             }
         }
@@ -160,7 +169,6 @@ class ExclusiveWriter(path: String) : Closeable {
         closeCount++
         println("Run close on ${hashCode()} for $closeCount")
     }
-
     /**
      * Deprecated !!! => replaced by Cleaners
      */
@@ -169,7 +177,9 @@ class ExclusiveWriter(path: String) : Closeable {
         this.close()
     }
 }
-
+/**
+ * Like a BufferedWriter with a lock on channel and the cleaning action.
+ */
 class ExclusiveWriterCleanable(path: String) : Closeable {
     companion object {
         private val cleaner = Cleaner.create()
@@ -179,7 +189,12 @@ class ExclusiveWriterCleanable(path: String) : Closeable {
         .also { it.channel.lock() }
         .bufferedWriter()
 
-    class State(private val writer: Writer) : Runnable {
+    /**
+     * DO NOT change it to an "anonymous" (i.e. lambda or object),
+     * because it will capture the enclosing instance of ExclusiveWriter
+     * and make it live forever.
+     */
+    class CleanAction(private val writer: Writer) : Runnable {
         var closeCount = 0
         override fun run() {
             writer.close()
@@ -188,11 +203,11 @@ class ExclusiveWriterCleanable(path: String) : Closeable {
         }
     }
 
-    private val cleanCode = State(writer)
+    private val cleanAction = CleanAction(writer)
 
-    private val cleanable = cleaner.register(this, cleanCode)
+    private val cleanable = cleaner.register(this, cleanAction)
     override fun close() {
-        // <=> cleanCode.run() + Remove it for be Cleaned (or "finalized")
+        // <=> cleanCode.run() + Unregisters the cleanable of the Cleaner
         cleanable.clean()
     }
 }
